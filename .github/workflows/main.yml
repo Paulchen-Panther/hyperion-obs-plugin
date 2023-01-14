@@ -6,25 +6,18 @@ env:
 
 jobs:
   linux:
-    name: 'Linux/Ubuntu 64-bit'
+    name: 'Ubuntu x86_64-bit'
     runs-on: ubuntu-latest
     env:
       MINIMUM_OBS_VERSION: 28.0.1
-      PROJECT_GIT: 'https://github.com/hyperion-project/hyperion-obs-plugin'
-      MAINTAINER: 'hyperion-project.org'
+      PROJECT_GIT: 'https://github.com/paulchen-panther/hyperion-obs-plugin'
+      MAINTAINER: 'self@github.com'
 
     steps:
       - name: 'Checkout hyperion-obs'
         uses: actions/checkout@v2
         with:
           path: ${{ github.workspace }}
-          submodules: 'true'
-
-      - name: 'Checkout OBS-Studio'
-        uses: actions/checkout@v2
-        with:
-          repository: obsproject/obs-studio
-          path: ${{ github.workspace }}/obs-studio
           submodules: 'true'
 
       - name: 'Generate environment variables from .version'
