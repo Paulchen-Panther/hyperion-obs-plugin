@@ -40,27 +40,18 @@ First follow the build instructions for OBS-Studio on [Windows][obs_build_window
 - This should cause the plugin DLL file to be created in the desired development environment.
 
 ### Linux (64-bit)
-- Install Git, CMake, QT5 and libobs
+- Install OBS Studio, Git, CMake and Qt5 (or Qt6)
 
 ```
-sudo apt install git cmake qtbase5-dev libobs-dev
-```
-
-- Get OBS Studio source code
-
-```
-git clone --recursive https://github.com/obsproject/obs-studio.git
+sudo apt install obs-studio git cmake qtbase5-dev
 ```
 
 - Build plugin
 
 ```
-git clone --recursive https://github.com/hyperion-project/hyperion-obs-plugin.git
-cd hyperion-obs-plugin
-mkdir build && cd build
-cmake -DOBS_SOURCE=../../obs-studio ..
-make -j $(nproc)
-sudo make install
+git clone --recursive https://github.com/hyperion-project/hyperion-obs-plugin.git && cd hyperion-obs-plugin
+cmake -S . -B build && cmake --build build
+sudo cmake --install build
 ```
 
 ## License
@@ -68,7 +59,7 @@ The source is released under MIT-License (see https://opensource.org/licenses/MI
 [![GitHub license](https://img.shields.io/badge/License-MIT-yellow.svg)](https://raw.githubusercontent.com/hyperion-project/hyperion-obs-plugin/main/LICENSE)
 
 [obs]: https://obsproject.com/
-[obs_build_windows]: https://github.com/obsproject/obs-studio/wiki/install-instructions#windows-build-directions
-[obs_build_macos]: https://github.com/obsproject/obs-studio/wiki/install-instructions#macos
+[obs_build_windows]: https://github.com/obsproject/obs-studio/wiki/build-instructions-for-windows
+[obs_build_macos]: https://github.com/obsproject/obs-studio/wiki/build-instructions-for-mac
 [hyperion]: https://github.com/hyperion-project/hyperion.ng
 [m-seker]: https://github.com/m-seker
