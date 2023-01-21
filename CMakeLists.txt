@@ -43,7 +43,7 @@ else ()
 	export(TARGETS flatc FILE "${CMAKE_BINARY_DIR}/flatc_export.cmake")
 
 	# define the include for the flatbuffers library
-	set(FLATBUFFERS_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/external/flatbuffers/include")
+	set(FLATBUFFERS_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/external/flatbuffers/include")
 
 	# define the flatc executable 
 	set(FLATBUFFERS_FLATC_EXECUTABLE "$<TARGET_FILE:flatc>")
@@ -58,7 +58,7 @@ include_directories(
 )
 
 # Compile Flatbuffers schema file
-set(FLATBUFFERS_SCHEMA "${CMAKE_SOURCE_DIR}/src/FlatBufferSchema.fbs")
+set(FLATBUFFERS_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/src/FlatBufferSchema.fbs")
 set(FLATBUFFERS_HEADER "${CMAKE_BINARY_DIR}/FlatBufferSchema_generated.h")
 
 add_custom_command(
@@ -73,7 +73,7 @@ add_custom_command(
 set_source_files_properties(${FLATBUFFERS_HEADER} PROPERTIES GENERATED TRUE)
 
 # Set project libraries
-FILE ( GLOB hyperion_obs_SOURCES "${CMAKE_SOURCE_DIR}/src/*.h" "${CMAKE_SOURCE_DIR}/src/*.cpp" "${CMAKE_SOURCE_DIR}/src/*.ui" )
+FILE ( GLOB hyperion_obs_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui" )
 target_link_libraries(${PROJECT_NAME}
 	OBS::${OBS_FRONTEND_API_NAME}
 	OBS::libobs
@@ -89,8 +89,8 @@ target_sources(${PROJECT_NAME} PRIVATE
 if(OS_WINDOWS)
 	set(PLUGIN_AUTHOR "hyperion-project")
 	set(PLUGIN_GIT "hyperion-obs-plugin")
-	set(PLUGIN_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
-	set(PLUGIN_ICON "${CMAKE_SOURCE_DIR}/resources/installer.ico")
+	set(PLUGIN_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+	set(PLUGIN_ICON "${CMAKE_CURRENT_SOURCE_DIR}/resources/installer.ico")
 	configure_file(package/Windows.iss.in ${CMAKE_BINARY_DIR}/Windows.iss)
 	target_link_libraries(${PROJECT_NAME} w32-pthreads)
 elseif(OS_MACOS)
