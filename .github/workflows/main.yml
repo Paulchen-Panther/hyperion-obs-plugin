@@ -29,12 +29,8 @@ jobs:
         run: |
           sudo apt-get -qq update
           sudo apt-get install -y \
-            libobs-dev \
+            obs-studio \
             git \
-            libc-dev-bin \
-            libc6-dev \
-            build-essential \
-            checkinstall \
             cmake \
             qtbase5-dev
 
