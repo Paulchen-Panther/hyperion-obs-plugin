@@ -37,7 +37,7 @@ jobs:
         id: version
         uses: notiz-dev/github-action-json-property@release
         with: 
-          path: 'buildspec.json'
+          path: '${{ github.workspace }}/buildspec.json'
           prop_path: 'version'
 
       - name: 'Install Dependencies'
