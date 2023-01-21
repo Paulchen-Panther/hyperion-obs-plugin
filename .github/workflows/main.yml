@@ -143,7 +143,7 @@ jobs:
         id: cache
         with:
           path: ${{ runner.workspace }}/vcpkg/installed
-          key: {{ runner.os }}-vcpkg-test
+          key: '{{ runner.os }}-vcpkg-123'
 
       - name: Install Flatbuffers
         shell: cmd
