@@ -1,23 +1,32 @@
-cmake_minimum_required(VERSION 3.16...3.21)
-file (STRINGS ".version" PLUGIN_VERSION)
-project(hyperion-obs VERSION ${PLUGIN_VERSION})
+# --- Detect if the plugin is build out of tree or not ---
+if(CMAKE_PROJECT_NAME STREQUAL "obs-studio")
+  set(BUILD_OUT_OF_TREE OFF)
+else()
+  set(BUILD_OUT_OF_TREE ON)
+  cmake_minimum_required(VERSION 3.18)
+endif()
 
-message(STATUS "${CMAKE_PROJECT_NAME} version: ${PLUGIN_VERSION}")
-add_library(${CMAKE_PROJECT_NAME} MODULE)
+project(hyperion-obs VERSION 1.0.2)
+set(PROJECT_FULL_NAME "hyperion-obs")
 
-# Import libobs
-find_package(libobs QUIET)
-find_package(LibObs QUIET)
-include(cmake/ObsPluginHelpers.cmake)
+message(STATUS "${PROJECT_NAME} version: ${PLUGIN_VERSION}")
+add_library(${PROJECT_NAME} MODULE)
 
-# Import OBS Frontend API
-find_package(obs-frontend-api REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE OBS::obs-frontend-api)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_SOURCE_DIR}/version.h)
+
+if(BUILD_OUT_OF_TREE)
+	find_package(libobs REQUIRED)
+	find_package(obs-frontend-api REQUIRED)
+	include(cmake/ObsPluginHelpers.cmake)
+	set(OBS_FRONTEND_API_NAME "obs-frontend-api")
+else()
+	set(OBS_FRONTEND_API_NAME "frontend-api")
+endif()
 
 # Import QT
 find_qt(COMPONENTS Widgets Core Network REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt::Core Qt::Widgets Qt::Network)
-set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON)
+target_link_libraries(${PROJECT_NAME} Qt::Core Qt::Widgets Qt::Network)
+set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON)
 
 # Compile Flatbuffers library or use Flatbuffers library from system
 option(USE_SYSTEM_FLATBUFFERS_LIBS "Use Flatbuffers library from system (default: OFF)" OFF)
@@ -65,19 +74,17 @@ set_source_files_properties(${FLATBUFFERS_HEADER} PROPERTIES GENERATED TRUE)
 
 # Set project libraries
 FILE ( GLOB hyperion_obs_SOURCES "${CMAKE_SOURCE_DIR}/src/*.h" "${CMAKE_SOURCE_DIR}/src/*.cpp" "${CMAKE_SOURCE_DIR}/src/*.ui" )
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME}
+	OBS::${OBS_FRONTEND_API_NAME}
 	OBS::libobs
-	OBS::obs-frontend-api
 	flatbuffers
 )
 
 # Set compiled Flatbuffers and project source files
-target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+target_sources(${PROJECT_NAME} PRIVATE
 	${hyperion_obs_SOURCES}
 	${FLATBUFFERS_HEADER}
 )
-
-option(GLOBAL_INSTALLATION "Whether to install for all users (default: OFF)" OFF)
 
 if(OS_WINDOWS)
 	set(PLUGIN_AUTHOR "hyperion-project")
@@ -85,11 +92,12 @@ if(OS_WINDOWS)
 	set(PLUGIN_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 	set(PLUGIN_ICON "${CMAKE_SOURCE_DIR}/resources/installer.ico")
 	configure_file(package/Windows.iss.in ${CMAKE_BINARY_DIR}/Windows.iss)
+	target_link_libraries(${PROJECT_NAME} w32-pthreads)
 elseif(OS_MACOS)
 	set(BUNDLE_IDENTIFIER "com.hyperion-project.hyperion-obs")
 	configure_file(package/macOS.pkgproj.in ${CMAKE_BINARY_DIR}/macOS.pkgproj)
 
-	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PREFIX "")
+	set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
 	# add_custom_command(
 	# 	TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
 	# 	COMMAND install_name_tool
@@ -106,30 +114,24 @@ elseif(OS_MACOS)
 	# 		$<TARGET_FILE:${CMAKE_PROJECT_NAME}>
 	# )
 
-	if (GLOBAL_INSTALLATION)
-		# Install for all user
-		install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION "/Library/Application Support/obs-studio/plugins/${CMAKE_PROJECT_NAME}/bin/")
-		install(DIRECTORY data/locale/ DESTINATION "/Library/Application Support/obs-studio/plugins/${CMAKE_PROJECT_NAME}/data/locale")
-	else()
-		# Install into home directory
-		install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION "$ENV{HOME}/Library/Application Support/obs-studio/plugins/${CMAKE_PROJECT_NAME}/bin/")
-		install(DIRECTORY data/locale/ DESTINATION "$ENV{HOME}/Library/Application Support/obs-studio/plugins/${CMAKE_PROJECT_NAME}/data/locale")
-	endif()
-
-	target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall)
+	target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 else()
-	include(GNUInstallDirs)
-	set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES PREFIX "")
+	if(BUILD_OUT_OF_TREE)
+		if(NOT LIB_OUT_DIR)
+			set(LIB_OUT_DIR "/lib/obs-plugins")
+		endif()
 
-	if (GLOBAL_INSTALLATION)
-		# For *.deb installer or install for all user
-		install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}/obs-plugins)
-		install(DIRECTORY data/locale/ DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/obs/obs-plugins/${CMAKE_PROJECT_NAME}/locale)
+		if(NOT DATA_OUT_DIR)
+			set(DATA_OUT_DIR "/share/obs/obs-plugins/${PROJECT_NAME}")
+		endif()
+
+		set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
+		install(TARGETS ${PROJECT_NAME} LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${LIB_OUT_DIR})
+		install(DIRECTORY data/locale DESTINATION ${CMAKE_INSTALL_PREFIX}/${DATA_OUT_DIR})
 	else()
-		# Installs into home directory
-		install(TARGETS ${CMAKE_PROJECT_NAME} LIBRARY DESTINATION "$ENV{HOME}/.config/obs-studio/plugins/${CMAKE_PROJECT_NAME}/bin/64bit")
-		install(DIRECTORY data/locale/ DESTINATION "$ENV{HOME}/.config/obs-studio/plugins/${CMAKE_PROJECT_NAME}/data/locale")
+		target_include_directories(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/UI/obs-frontend-api")
+		set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "plugins/hyperion-obs")
 	endif()
-
-	target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall)
 endif()
+
+setup_plugin_target(${PROJECT_NAME})

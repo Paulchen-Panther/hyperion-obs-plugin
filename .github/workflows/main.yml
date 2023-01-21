@@ -2,67 +2,77 @@ name: hyperion-obs
 on: [push, pull_request]
 
 env:
-  PLUGIN_NAME: 'hyperion-obs'
+  PLUGIN_NAME: hyperion-obs
+  PROJECT_GIT: 'https://github.com/hyperion-project/hyperion-obs-plugin'
+  MAINTAINER: 'hyperion-project.org'
+  MINIMUM_OBS_VERSION: 28.0.0-rc1
 
 jobs:
   linux:
-    name: 'Ubuntu x86_64-bit'
-    runs-on: ubuntu-latest
-    env:
-      MINIMUM_OBS_VERSION: 28.0.1
-      PROJECT_GIT: 'https://github.com/paulchen-panther/hyperion-obs-plugin'
-      MAINTAINER: 'self@github.com'
-
+    name: 'Linux'
+    runs-on: ${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ['ubuntu-20.04', 'ubuntu-22.04']
     steps:
-      - name: 'Checkout hyperion-obs'
-        uses: actions/checkout@v2
+      - name: 'Checkout OBS Studio'
+        uses: actions/checkout@v3.3.0
         with:
-          path: ${{ github.workspace }}
+          repository: obsproject/obs-studio
+          ref: ${{ env.MINIMUM_OBS_VERSION }}
+          submodules: 'recursive'
+
+      - name: 'Checkout hyperion-obs'
+        uses: actions/checkout@v3.3.0
+        with:
+          path: plugins/${{ env.PLUGIN_NAME }}
           submodules: 'true'
 
-      - name: 'Generate environment variables from .version'
+      - name: Add hyperion-obs to obs cmake
         shell: bash
-        run: echo "VERSION=$(tr -d '\n' < .version)" >> $GITHUB_ENV
+        run: echo "add_subdirectory(${{ env.PLUGIN_NAME }})" >> plugins/CMakeLists.txt
+
+      - name: 'Fetch hyperion-obs version'
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'buildspec.json'
+          prop_path: 'version'
 
       - name: 'Install Dependencies'
+        run: CI/linux/01_install_dependencies.sh --disable-pipewire
+
+      - name: 'Configure'
         shell: bash
         run: |
-          sudo apt-get -qq update
-          sudo apt-get install -y \
-            obs-studio \
-            git \
-            cmake \
-            qtbase5-dev
-          sudo apt-get install -y libobs-dev
+          mkdir ./build
+          cmake -S . -B "./build" -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DLINUX_PORTABLE=OFF -DENABLE_AJA=OFF -DENABLE_NEW_MPEGTS_OUTPUT=OFF -DBUILD_CAPTIONS=OFF -DWITH_RTMPS=OFF -DBUILD_BROWSER=OFF -DBUILD_VIRTUALCAM=OFF -DBUILD_VST=OFF -DENABLE_PIPEWIRE=OFF -DENABLE_SCRIPTING=OFF
 
-      - name: 'Build hyperion-obs'
+      - name: 'Build'
+        shell: bash
+        run: cmake --build "./build"
+
+      - name: 'Package'
         shell: bash
         run: |
-          cmake \
-            -S ${{ github.workspace }} \
-            -B ${{ github.workspace }}/build \
-            -G "Unix Makefiles" \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -DGLOBAL_INSTALLATION=ON
-          sudo cmake --build ${{ github.workspace }}/build/ --parallel 4 --target install
-
           cd ${{github.workspace}}/build
           PAGER="cat" sudo checkinstall -y --type=debian --fstrans=no --nodoc \
             --backup=no --deldoc=yes --install=no \
-            --pkgname=${{ env.PLUGIN_NAME }} --pkgversion=${{ env.VERSION }} \
+            --pkgname=${{ env.PLUGIN_NAME }} --pkgversion=${{steps.version.outputs.propStr}}  \
             --exclude="/usr/include/flatbuffers,/usr/bin,/usr/lib/x86_64-linux-gnu/cmake,/usr/lib/x86_64-linux-gnu/pkgconfig" \
             --pkglicense="MIT" --maintainer="${{ env.MAINTAINER }}" \
             --pkggroup="video" \
             --pkgsource="${{ env.PROJECT_GIT }}" \
             --requires="obs-studio \(\>= ${{ env.MINIMUM_OBS_VERSION }}\)" \
             --pakdir="${{ github.workspace }}/plugin"
-          sudo mv ${{ github.workspace }}/plugin/*.deb ${{ github.workspace }}/plugin/${{ env.PLUGIN_NAME }}.${{ env.VERSION }}.linux.x64.deb
+          sudo mv ${{ github.workspace }}/plugin/*.deb ${{ github.workspace }}/plugin/${{ env.PLUGIN_NAME }}.${{steps.version.outputs.propStr}}.${{ matrix.ubuntu }}.deb
 
       - name: 'Upload hyperion-obs'
         if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3.1.2
         with:
-          name: '${{ env.PLUGIN_NAME }}.${{ env.VERSION }}.linux.x64'
+          name: '${{ env.PLUGIN_NAME }}.${{steps.version.outputs.propStr}}.${{ matrix.ubuntu }}'
           path: ${{ github.workspace }}/plugin/*.deb
 
   github_publish:
