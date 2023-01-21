@@ -6,7 +6,8 @@ message(STATUS "${CMAKE_PROJECT_NAME} version: ${PLUGIN_VERSION}")
 add_library(${CMAKE_PROJECT_NAME} MODULE)
 
 # Import libobs
-find_package(libobs REQUIRED)
+find_package(libobs QUIET)
+find_package(LibObs QUIET)
 include(cmake/ObsPluginHelpers.cmake)
 
 # Import OBS Frontend API
