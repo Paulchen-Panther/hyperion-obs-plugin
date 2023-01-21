@@ -41,13 +41,15 @@ jobs:
           prop_path: 'version'
 
       - name: 'Install Dependencies'
-        run: CI/linux/01_install_dependencies.sh --disable-pipewire
+        run: |
+          CI/linux/01_install_dependencies.sh --disable-pipewire
+          sudo apt-get install -y checkinstall
 
       - name: 'Configure'
         shell: bash
         run: |
           mkdir ./build
-          cmake -S . -B "./build" -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DLINUX_PORTABLE=OFF -DENABLE_AJA=OFF -DENABLE_NEW_MPEGTS_OUTPUT=OFF -DBUILD_CAPTIONS=OFF -DWITH_RTMPS=OFF -DBUILD_BROWSER=OFF -DBUILD_VIRTUALCAM=OFF -DBUILD_VST=OFF -DENABLE_PIPEWIRE=OFF -DENABLE_SCRIPTING=OFF
+          cmake -S . -B "./build" -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DLINUX_PORTABLE=OFF -DENABLE_AJA=OFF -DENABLE_NEW_MPEGTS_OUTPUT=OFF -DBUILD_CAPTIONS=OFF -DWITH_RTMPS=OFF -DBUILD_BROWSER=OFF -DBUILD_VIRTUALCAM=OFF -DBUILD_VST=OFF -DENABLE_PIPEWIRE=OFF -DENABLE_ALSA=OFF -DENABLE_V4L2=OFF -DENABLE_PULSEAUDIO=OFF -DDISABLE_VLC=ON -DENABLE_SCRIPTING=OFF -DDISABLE_DECKLINK=ON 
 
       - name: 'Build'
         shell: bash
