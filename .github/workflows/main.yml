@@ -138,7 +138,16 @@ jobs:
           path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
           prop_path: 'version'
 
+      - name: Cache vcpkg
+        uses: actions/cache@v2
+        id: cache
+        with:
+            path: ${{ runner.workspace }}/vcpkg/installed
+            key: ${{ runner.os }}-vcpkg-${{ hashFiles('.github/workflows/main.yml') }}
+
       - name: Install Flatbuffers
+        shell: cmd
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |
           vcpkg install flatbuffers:${{ matrix.target }}-windows
           vcpkg integrate install
@@ -154,7 +163,7 @@ jobs:
           7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
 
       - name: 'Configure'
-        run: |
+        run: >
           mkdir ./package
           mkdir ./installer
           mkdir ./installer/media
