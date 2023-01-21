@@ -33,6 +33,7 @@ jobs:
             git \
             cmake \
             qtbase5-dev
+          sudo apt-get install -y libobs-dev
 
       - name: 'Build hyperion-obs'
         shell: bash
