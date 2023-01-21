@@ -142,9 +142,8 @@ jobs:
         uses: actions/cache@v3.2.3
         id: cache
         with:
-            path: ${{ runner.workspace }}/vcpkg/installed
-            key: {{ runner.os }}-vcpkg-test
-#            key: ${{ runner.os }}-vcpkg-${{ hashFiles('.github/workflows/main.yml') }}
+          path: ${{ runner.workspace }}/vcpkg/installed
+          key: {{ runner.os }}-vcpkg-test
 
       - name: Install Flatbuffers
         shell: cmd
