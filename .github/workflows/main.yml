@@ -139,7 +139,7 @@ jobs:
           prop_path: 'version'
 
       - name: Cache vcpkg
-        uses: actions/cache@v2
+        uses: actions/cache@v3.2.3
         id: cache
         with:
             path: ${{ runner.workspace }}/vcpkg/installed
@@ -163,32 +163,32 @@ jobs:
           7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
 
       - name: 'Configure'
-        run: >
+        run: |
           mkdir ./package
           mkdir ./installer
           mkdir ./installer/media
           mkdir ./build
-          cmake -S . \
-            -B "${{ github.workspace }}/build" \
-            -G"${{ env.CMAKE_GENERATOR }}" \
-            -DCMAKE_PREFIX_PATH:PATH="${{ github.workspace }}/cmbuild/deps" \
-            -A"${{ matrix.cmake_build }}" \
-            -DCMAKE_SYSTEM_VERSION="${{ env.CMAKE_SYSTEM_VERSION }}" \
-            -DBUILD_BROWSER=false \
-            -DBUILD_VST=false \
-            -DBUILD_VIRTUALCAM=false \
-            -DBUILD_CAPTIONS=false \
-            -DCOMPILE_D3D12_HOOK=false \
-            -DENABLE_SCRIPTING=false \
-            -DDepsPath="${{ github.workspace }}/cmbuild/deps" \
-            -DDepsPath${{ matrix.deps_ext }}="${{ github.workspace }}/cmbuild/deps" \
-            -DQTDIR="${{ github.workspace }}/cmbuild/deps/qt6" \
-            -DCOPIED_DEPENDENCIES=FALSE \
-            -DCOPY_DEPENDENCIES=TRUE \
-            -DENABLE_PLUGINS=TRUE \
-            -DDISABLE_PLUGINS=FALSE \
-            -DENABLE_BROWSER=FALSE \
-            -DENABLE_WEBSOCKET=FALSE \
+          cmake -S . >
+            -B "${{ github.workspace }}/build" >
+            -G"${{ env.CMAKE_GENERATOR }}" >
+            -DCMAKE_PREFIX_PATH:PATH="${{ github.workspace }}/cmbuild/deps" >
+            -A"${{ matrix.cmake_build }}" >
+            -DCMAKE_SYSTEM_VERSION="${{ env.CMAKE_SYSTEM_VERSION }}" >
+            -DBUILD_BROWSER=false >
+            -DBUILD_VST=false >
+            -DBUILD_VIRTUALCAM=false >
+            -DBUILD_CAPTIONS=false >
+            -DCOMPILE_D3D12_HOOK=false >
+            -DENABLE_SCRIPTING=false >
+            -DDepsPath="${{ github.workspace }}/cmbuild/deps" >
+            -DDepsPath${{ matrix.deps_ext }}="${{ github.workspace }}/cmbuild/deps" >
+            -DQTDIR="${{ github.workspace }}/cmbuild/deps/qt6" >
+            -DCOPIED_DEPENDENCIES=FALSE >
+            -DCOPY_DEPENDENCIES=TRUE >
+            -DENABLE_PLUGINS=TRUE >
+            -DDISABLE_PLUGINS=FALSE >
+            -DENABLE_BROWSER=FALSE >
+            -DENABLE_WEBSOCKET=FALSE >
             -DCMAKE_TOOLCHAIN_FILE=${{ runner.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: 'Build'
