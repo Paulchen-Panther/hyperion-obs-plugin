@@ -59,7 +59,7 @@ include_directories(
 
 # Compile Flatbuffers schema file
 set(FLATBUFFERS_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/src/FlatBufferSchema.fbs")
-set(FLATBUFFERS_HEADER "${CMAKE_BINARY_DIR}/FlatBufferSchema_generated.h")
+set(FLATBUFFERS_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FlatBufferSchema_generated.h")
 
 add_custom_command(
 	OUTPUT ${FLATBUFFERS_HEADER}
