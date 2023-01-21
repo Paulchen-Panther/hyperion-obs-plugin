@@ -28,49 +28,23 @@ find_qt(COMPONENTS Widgets Core Network REQUIRED)
 target_link_libraries(${PROJECT_NAME} Qt::Core Qt::Widgets Qt::Network)
 set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON)
 
-# Compile Flatbuffers library or use Flatbuffers library from system
-option(USE_SYSTEM_FLATBUFFERS_LIBS "Use Flatbuffers library from system (default: OFF)" OFF)
-
-if (USE_SYSTEM_FLATBUFFERS_LIBS)
-	find_program(FLATBUFFERS_FLATC_EXECUTABLE NAMES flatc REQUIRED)
-	find_package(Flatbuffers REQUIRED)
-else ()
-	set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared flatbuffers library")
-	set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Build Flatbuffers with tests")
-	add_subdirectory(external/flatbuffers)
-
-	# export the flatc compiler
-	export(TARGETS flatc FILE "${CMAKE_BINARY_DIR}/flatc_export.cmake")
-
-	# define the include for the flatbuffers library
-	set(FLATBUFFERS_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/external/flatbuffers/include")
-
-	# define the flatc executable 
-	set(FLATBUFFERS_FLATC_EXECUTABLE "$<TARGET_FILE:flatc>")
-endif()
-
-set(FLATBUFFERS_FLATC_EXECUTABLE ${FLATBUFFERS_FLATC_EXECUTABLE})
-set(FLATBUFFERS_INCLUDE_DIRS ${FLATBUFFERS_INCLUDE_DIRS})
-
-include_directories(
-	${CMAKE_CURRENT_BINARY_DIR}
-	${FLATBUFFERS_INCLUDE_DIRS}
-)
-
-# Compile Flatbuffers schema file
-set(FLATBUFFERS_SCHEMA "${CMAKE_CURRENT_SOURCE_DIR}/src/FlatBufferSchema.fbs")
-set(FLATBUFFERS_HEADER "${CMAKE_CURRENT_BINARY_DIR}/FlatBufferSchema_generated.h")
+# Find Flatbuffers and compile schema
+find_package(Flatbuffers CONFIG REQUIRED Flatbuffers flatc)
 
 add_custom_command(
-	OUTPUT ${FLATBUFFERS_HEADER}
-	COMMAND ${FLATBUFFERS_FLATC_EXECUTABLE}
-	ARGS -c --no-includes --gen-mutable -o ${CMAKE_CURRENT_BINARY_DIR} ${FLATBUFFERS_SCHEMA}
-	DEPENDS ${FLATBUFFERS_FLATC_EXECUTABLE} ${FLATBUFFERS_SCHEMA}
-	COMMENT "Building Flatbuffer header file"
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/FlatBufferSchema_generated.h
+	COMMAND flatbuffers::flatc -c --no-includes --gen-mutable -o ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/src/FlatBufferSchema.fbs
+	DEPENDS flatbuffers::flatc ${CMAKE_CURRENT_SOURCE_DIR}/src/FlatBufferSchema.fbs
 )
 
-set_source_files_properties(${FLATBUFFERS_HEADER} PROPERTIES GENERATED TRUE)
+add_custom_target(schema DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FlatBufferSchema_generated.h)
+add_dependencies(${PROJECT_NAME} schema)
+
+# Set project includes
+target_include_directories(${PROJECT_NAME} PRIVATE
+ 	${CMAKE_CURRENT_BINARY_DIR}
+ 	${FLATBUFFERS_INCLUDE_DIRS}
+)
 
 # Set project libraries
 FILE ( GLOB hyperion_obs_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" "${CMAKE_CURRENT_SOURCE_DIR}/src/*.ui" )
@@ -81,10 +55,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # Set compiled Flatbuffers and project source files
-target_sources(${PROJECT_NAME} PRIVATE
-	${hyperion_obs_SOURCES}
-	${FLATBUFFERS_HEADER}
-)
+target_sources(${PROJECT_NAME} PRIVATE ${hyperion_obs_SOURCES})
 
 if(OS_WINDOWS)
 	set(PLUGIN_AUTHOR "hyperion-project")
