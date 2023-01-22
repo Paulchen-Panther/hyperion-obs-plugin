@@ -41,7 +41,7 @@ add_custom_target(schema DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/FlatBufferSchema_ge
 add_dependencies(${PROJECT_NAME} schema)
 
 # Set project includes
-target_include_directories(${PROJECT_NAME} PRIVATE
+target_include_directories(${PROJECT_NAME} PUBLIC
  	${CMAKE_CURRENT_BINARY_DIR}
  	${FLATBUFFERS_INCLUDE_DIRS}
 )
@@ -51,10 +51,10 @@ FILE ( GLOB hyperion_obs_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h" "${CMAKE_
 target_link_libraries(${PROJECT_NAME}
 	OBS::${OBS_FRONTEND_API_NAME}
 	OBS::libobs
-	flatbuffers
+	flatbuffers::flatbuffers
 )
 
-# Set compiled Flatbuffers and project source files
+# Set project source files
 target_sources(${PROJECT_NAME} PRIVATE ${hyperion_obs_SOURCES})
 
 if(OS_WINDOWS)
