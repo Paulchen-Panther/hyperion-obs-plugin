@@ -44,7 +44,7 @@ Name: "tr"; MessagesFile: "compiler:Languages\Turkish.isl"
 
 [Files]
 Source: "package\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "..\LICENSE"; Flags: dontcopy
+Source: "LICENSE"; Flags: dontcopy
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

@@ -3,8 +3,6 @@ on: [push, pull_request]
 
 env:
   PLUGIN_NAME: hyperion-obs
-  PROJECT_GIT: 'https://github.com/hyperion-project/hyperion-obs-plugin'
-  MAINTAINER: 'hyperion-project.org'
   OBS_VERSION: 28.0.0-rc1
 
 jobs:
@@ -46,7 +44,7 @@ jobs:
       - name: Install Flatbuffers
         run: sudo apt-get install -y libflatbuffers-dev
 
-      - name: 'Configure'
+      - name: 'Configure and Build OBS Studio with hyperion-obs'
         shell: bash
         run: |
           mkdir ./build
@@ -66,13 +64,10 @@ jobs:
             -DENABLE_ALSA=OFF \
             -DENABLE_V4L2=OFF \
             -DENABLE_PULSEAUDIO=OFF \
-            -DENABLE_VLC=ON \
+            -DENABLE_VLC=OFF \
             -DENABLE_SCRIPTING=OFF \
-            -DENABLE_DECKLINK=ON 
-
-      - name: 'Build'
-        shell: bash
-        run: cmake --build "./build"
+            -DENABLE_DECKLINK=OFF
+          cmake --build "./build"
 
       - name: 'Package'
         shell: bash
@@ -131,6 +126,21 @@ jobs:
         shell: cmd
         run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
 
+      - name: 'Fetch hyperion-obs version'
+        if: success()
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
+          prop_path: 'version'
+
+      - name: 'Install OBS Studio Dependencies'
+        run: |
+          curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
+          curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
+          7z x windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
+          7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
+
       - name: 'Restore Flatbuffers from vcpkg'
         uses: actions/cache@v3.2.3
         id: vcpkg
@@ -145,16 +155,6 @@ jobs:
           vcpkg install flatbuffers:${{ matrix.target }}-windows
           vcpkg integrate install
 
-      - name: 'Install prerequisite: QT'
-        run: |
-          curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
-          7z x windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
-
-      - name: 'Install prerequisite: Pre-built dependencies'
-        run: |
-          curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
-          7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
-
       - name: 'Configure and Build OBS Studio with hyperion-obs'
         run: |
           mkdir ./build
@@ -164,12 +164,12 @@ jobs:
             -DCMAKE_PREFIX_PATH:PATH="${{ github.workspace }}/cmbuild/deps" `
             -A"${{ matrix.cmake_build }}" `
             -DCMAKE_SYSTEM_VERSION="${{ env.CMAKE_SYSTEM_VERSION }}" `
-            -DBUILD_BROWSER=false `
-            -DBUILD_VST=false `
-            -DBUILD_VIRTUALCAM=false `
-            -DBUILD_CAPTIONS=false `
-            -DCOMPILE_D3D12_HOOK=false `
-            -DENABLE_SCRIPTING=false `
+            -DBUILD_BROWSER=FALSE `
+            -DBUILD_VST=FALSE `
+            -DBUILD_VIRTUALCAM=FALSE `
+            -DBUILD_CAPTIONS=FALSE `
+            -DCOMPILE_D3D12_HOOK=FALSE `
+            -DENABLE_SCRIPTING=FALSE `
             -DDepsPath="${{ github.workspace }}/cmbuild/deps" `
             -DDepsPath${{ matrix.deps_ext }}="${{ github.workspace }}/cmbuild/deps" `
             -DQTDIR="${{ github.workspace }}/cmbuild/deps/qt6" `
@@ -182,14 +182,6 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
-      - name: 'Fetch hyperion-obs version'
-        if: success()
-        id: version
-        uses: notiz-dev/github-action-json-property@release
-        with: 
-          path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
-          prop_path: 'version'
-
       - name: 'Package'
         if: success()
         run: |
@@ -197,6 +189,7 @@ jobs:
           robocopy .\build\rundir\RelWithDebInfo\obs-plugins\${{ matrix.deps_ext }}bit\ .\package\obs-plugins\${{ matrix.deps_ext }}bit ${{ env.PLUGIN_NAME }}.* /E /XF .gitignore
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
           copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\Windows.iss
+          copy .\plugins\${{ env.PLUGIN_NAME }}\LICENSE .\LICENSE
           $env:FILE_NAME="${{ env.PLUGIN_NAME }}.${{steps.version.outputs.prop}}-windows-${{ matrix.target }}"
           echo "FILE_NAME=${env:FILE_NAME}" >> ${env:GITHUB_ENV}
           iscc .\Windows.iss /O. /F"${{ env.FILE_NAME }}"
