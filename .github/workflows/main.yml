@@ -121,33 +121,16 @@ jobs:
           ref: ${{ env.OBS_VERSION }}
           submodules: 'recursive'
 
-      - name: 'Checkout hyperion-obs'
-        uses: actions/checkout@v3.3.0
-        with:
-          path: plugins/${{ env.PLUGIN_NAME}}
-          submodules: 'true'
-
-      - name: 'Add hyperion-obs to plugins'
-        shell: cmd
-        run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
-
-      - name: 'Fetch hyperion-obs version'
-        id: version
-        uses: notiz-dev/github-action-json-property@release
-        with: 
-          path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
-          prop_path: 'version'
-
-      - name: Cache vcpkg
+      - name: 'Restore Flatbuffers from vcpkg'
         uses: actions/cache@v3.2.3
-        id: cache
+        id: vcpkg
         with:
           path: C:/vcpkg/installed
-          key: windows-${{ matrix.target }}-vcpkg-${{ hashFiles('.github/workflows/main.yml') }}
+          key: windows-${{ matrix.target }}-vcpkg
 
-      - name: Install Flatbuffers from vcpkg
+      - name: 'Install Flatbuffers from vcpkg'
         shell: cmd
-        if: steps.cache.outputs.cache-hit != 'true'
+        if: steps.vcpkg.outputs.cache-hit != 'true'
         run: |
           vcpkg install flatbuffers:${{ matrix.target }}-windows
           vcpkg integrate install
@@ -162,11 +145,16 @@ jobs:
           curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
           7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
 
-      - name: 'Configure'
+      - name: 'Restore OBS build from cache'
+        uses: actions/cache@v3.2.3
+        id: obs-build
+        with:
+          path: ${{ github.workspace }}\build
+          key: windows-${{ matrix.target }}-obs-build
+
+      - name: 'Configure and Build OBS Studio'
+        if: steps.obs-build.outputs.cache-hit != 'true'
         run: |
-          mkdir ./package
-          mkdir ./installer
-          mkdir ./installer/media
           mkdir ./build
           cmake -S . `
             -B "${{ github.workspace }}/build" `
@@ -190,25 +178,42 @@ jobs:
             -DENABLE_BROWSER=FALSE `
             -DENABLE_WEBSOCKET=FALSE `
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
-      - name: 'Build'
+      - name: 'Checkout hyperion-obs'
+        uses: actions/checkout@v3.3.0
+        with:
+          path: plugins/${{ env.PLUGIN_NAME}}
+          submodules: 'true'
+
+      - name: 'Add hyperion-obs to OBS Studio plugins'
+        shell: cmd
+        run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
+
+      - name: 'ReBuild OBS Studio with hyperion-obs'
         run: msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
+
+      - name: 'Fetch hyperion-obs version'
+        if: success()
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
+          prop_path: 'version'
 
       - name: 'Package'
         if: success()
         run: |
-          $env:FILE_NAME="${{ env.PLUGIN_NAME }}.${{steps.version.outputs.prop}}-windows-${{ matrix.target }}"
-          echo "FILE_NAME=${env:FILE_NAME}" >> ${env:GITHUB_ENV}
+          mkdir ./package
           robocopy .\build\rundir\RelWithDebInfo\obs-plugins\${{ matrix.deps_ext }}bit\ .\package\obs-plugins\${{ matrix.deps_ext }}bit ${{ env.PLUGIN_NAME }}.* /E /XF .gitignore
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
-          copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\installer\Windows.iss
-          robocopy .\plugins\${{ env.PLUGIN_NAME}}\resources\ .\installer\resources\ /E /XF .gitignore
-          curl "-kL" "https://files.jrsoftware.org/is/6/innosetup-6.2.1.exe" "-f" "--retry" "5" "-o" "inno.exe"
-          .\inno.exe /VERYSILENT /SP- /SUPPRESSMSGBOXES /NORESTART
-          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\installer\Windows.iss"
+          $env:FILE_NAME="${{ env.PLUGIN_NAME }}.${{steps.version.outputs.prop}}-windows-${{ matrix.target }}"
+          echo "FILE_NAME=${env:FILE_NAME}" >> ${env:GITHUB_ENV}
+          iscc .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss /O. /F"${{ env.FILE_NAME }}"
           exit 0
 
       - name: 'Upload'
+        if: success()
         uses: actions/upload-artifact@v3.1.2
         with:
           name: '${{ env.FILE_NAME }}-installer'
