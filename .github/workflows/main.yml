@@ -143,7 +143,7 @@ jobs:
         id: cache
         with:
           path: ${{ runner.workspace }}/vcpkg/installed
-          key: '{{ runner.os }}-vcpkg-123'
+          key: '${{ matrix.target }}-vcpkg-123'
 
       - name: Install Flatbuffers from vcpkg
         shell: cmd
@@ -189,7 +189,7 @@ jobs:
             -DDISABLE_PLUGINS=FALSE `
             -DENABLE_BROWSER=FALSE `
             -DENABLE_WEBSOCKET=FALSE `
-            -DCMAKE_TOOLCHAIN_FILE=${{ runner.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
 
       - name: 'Build'
         run: msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
