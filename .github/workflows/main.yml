@@ -191,7 +191,30 @@ jobs:
         run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
 
       - name: 'ReBuild OBS Studio with hyperion-obs'
-        run: msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
+        run: |
+          cmake -S . `
+            -B "${{ github.workspace }}/build" `
+            -G"${{ env.CMAKE_GENERATOR }}" `
+            -DCMAKE_PREFIX_PATH:PATH="${{ github.workspace }}/cmbuild/deps" `
+            -A"${{ matrix.cmake_build }}" `
+            -DCMAKE_SYSTEM_VERSION="${{ env.CMAKE_SYSTEM_VERSION }}" `
+            -DBUILD_BROWSER=false `
+            -DBUILD_VST=false `
+            -DBUILD_VIRTUALCAM=false `
+            -DBUILD_CAPTIONS=false `
+            -DCOMPILE_D3D12_HOOK=false `
+            -DENABLE_SCRIPTING=false `
+            -DDepsPath="${{ github.workspace }}/cmbuild/deps" `
+            -DDepsPath${{ matrix.deps_ext }}="${{ github.workspace }}/cmbuild/deps" `
+            -DQTDIR="${{ github.workspace }}/cmbuild/deps/qt6" `
+            -DCOPIED_DEPENDENCIES=FALSE `
+            -DCOPY_DEPENDENCIES=TRUE `
+            -DENABLE_PLUGINS=TRUE `
+            -DDISABLE_PLUGINS=FALSE `
+            -DENABLE_BROWSER=FALSE `
+            -DENABLE_WEBSOCKET=FALSE `
+            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+          msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
       - name: 'Fetch hyperion-obs version'
         if: success()
@@ -217,7 +240,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: '${{ env.FILE_NAME }}-installer'
-          path: package/*
+          path: package/*.exe
 
   github_publish:
     name: 'Publish GitHub Releases'
