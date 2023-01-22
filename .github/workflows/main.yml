@@ -200,7 +200,7 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: '${{ env.FILE_NAME }}-installer'
-          path: package/*.exe
+          path: ./*.exe
 
   github_publish:
     name: 'Publish GitHub Releases'
