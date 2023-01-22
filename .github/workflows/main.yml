@@ -84,7 +84,7 @@ jobs:
           mv ./plugins/${{ env.PLUGIN_NAME }}/data ./${{ env.PLUGIN_NAME }}/data
           tar -cvzf "${FILE_NAME}" ${{ env.PLUGIN_NAME }}
 
-      - name: 'Upload hyperion-obs'
+      - name: 'Upload'
         if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'pull_request'
         uses: actions/upload-artifact@v3.1.2
         with:
@@ -142,8 +142,8 @@ jobs:
         uses: actions/cache@v3.2.3
         id: cache
         with:
-          path: ${{ runner.workspace }}/vcpkg/installed
-          key: '${{ matrix.target }}-vcpkg-123'
+          path: C:/vcpkg/installed
+          key: windows-${{ matrix.target }}-vcpkg-${{ hashFiles('.github/workflows/main.yml') }}
 
       - name: Install Flatbuffers from vcpkg
         shell: cmd
@@ -203,14 +203,16 @@ jobs:
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
           copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\installer\Windows.iss
           robocopy .\plugins\${{ env.PLUGIN_NAME}}\resources\ .\installer\resources\ /E /XF .gitignore
+          curl "-kL" "https://files.jrsoftware.org/is/6/innosetup-6.2.1.exe" "-f" "--retry" "5" "-o" "inno.exe"
+          .\inno.exe /VERYSILENT /SP- /SUPPRESSMSGBOXES /NORESTART
+          & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\installer\Windows.iss"
           exit 0
 
-      - name: 'Package'
-        if: success()
+      - name: 'Upload'
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: 'installer-files'
-          path: installer/*
+          name: '${{ env.FILE_NAME }}-installer'
+          path: package/*
 
   github_publish:
     name: 'Publish GitHub Releases'
