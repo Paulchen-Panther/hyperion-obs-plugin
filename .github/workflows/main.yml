@@ -25,7 +25,6 @@ jobs:
         uses: actions/checkout@v3.3.0
         with:
           path: plugins/${{ env.PLUGIN_NAME }}
-          submodules: 'true'
 
       - name: 'Add hyperion-obs to plugins'
         shell: bash
@@ -86,8 +85,8 @@ jobs:
           name: '${{ env.FILE_NAME }}'
           path: '*.tar.gz'
 
-  windows:
-    name: 'Windows'
+  windows-build:
+    name: 'Windows Build'
     runs-on: [windows-latest]
     strategy:
       fail-fast: true
@@ -120,19 +119,10 @@ jobs:
         uses: actions/checkout@v3.3.0
         with:
           path: plugins/${{ env.PLUGIN_NAME}}
-          submodules: 'true'
 
       - name: 'Add hyperion-obs to OBS Studio plugins'
         shell: cmd
         run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
-
-      - name: 'Fetch hyperion-obs version'
-        if: success()
-        id: version
-        uses: notiz-dev/github-action-json-property@release
-        with: 
-          path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
-          prop_path: 'version'
 
       - name: 'Install OBS Studio Dependencies'
         run: |
@@ -182,30 +172,90 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
-      - name: 'Package'
+      - name: 'Prepare ${{ matrix.deps_ext }} build/Installer Files'
         if: success()
         run: |
           mkdir ./package
           robocopy .\build\rundir\RelWithDebInfo\obs-plugins\${{ matrix.deps_ext }}bit\ .\package\obs-plugins\${{ matrix.deps_ext }}bit ${{ env.PLUGIN_NAME }}.* /E /XF .gitignore
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
-          copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\Windows.iss
-          copy .\plugins\${{ env.PLUGIN_NAME }}\LICENSE .\LICENSE
-          $env:FILE_NAME="${{ env.PLUGIN_NAME }}.${{steps.version.outputs.prop}}-windows-${{ matrix.target }}"
-          echo "FILE_NAME=${env:FILE_NAME}" >> ${env:GITHUB_ENV}
-          iscc .\Windows.iss /O. /F"${{ env.FILE_NAME }}"
+          copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\installer\Windows.iss
           exit 0
 
-      - name: 'Upload'
+      - name: 'Publish ${{ matrix.deps_ext }} build files'
         if: success()
         uses: actions/upload-artifact@v3.1.2
         with:
-          name: '${{ env.FILE_NAME }}-installer'
+          name: 'windows-${{ matrix.target }}'
+          path: package/*
+
+      - name: 'Publish Installer Files'
+        if: success()
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: 'installer-files'
+          path: installer/*
+
+  windows-package:
+    name: 'Windows Package'
+    runs-on: [windows-latest]
+    needs: [windows-build]
+    steps:
+      - name: 'Checkout hyperion-obs'
+        uses: actions/checkout@v3.3.0
+
+      - name: 'Fetch hyperion-obs version'
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'buildspec.json'
+          prop_path: 'version'
+
+      - name: 'Set environment variables'
+        run: |
+          mkdir ./release
+          $env:FILE_NAME="${{ env.PLUGIN_NAME }}-${{steps.version.outputs.prop}}-windows-x86_64"
+          echo "FILE_NAME=${env:FILE_NAME}" >> ${env:GITHUB_ENV}
+
+      - name: 'Retrieve x86 build files'
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: windows-x86
+          path: ./release
+
+      - name: 'Retrieve x64 build files'
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: windows-x64
+          path: ./release
+
+      - name: 'Retrieve installer files'
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: 'installer-files'
+          path: .
+
+      - name: 'Package'
+        run: iscc .\Windows.iss /O. /F"${{ env.FILE_NAME }}"
+
+      - name: 'Upload to GitHub'
+        if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: '${{ env.FILE_NAME }}'
           path: ./*.exe
+
+      - name: 'Remove temp artifacts'
+        uses: geekyeggo/delete-artifact@v2.0.0
+        with:
+          name: |
+            windows-x86
+            windows-x64
+            installer-files
 
   github_publish:
     name: 'Publish GitHub Releases'
     if: startsWith(github.event.ref, 'refs/tags')
-    needs: [linux, windows]
+    needs: [linux, windows-package]
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout hyperion-obs'
@@ -219,13 +269,13 @@ jobs:
           prop_path: 'version'
 
       # Download artifacts from previous build process
-      - name: Download artifacts
+      - name: 'Download artifacts'
         uses: actions/download-artifact@v2
         with:
           path: artifacts
 
       # Create draft release and upload artifacts
-      - name: Create draft release
+      - name: 'Create draft release'
         uses: softprops/action-gh-release@v1
         with:
           name: ${{ env.PLUGIN_NAME }} ${{steps.version.outputs.propStr}}
