@@ -175,7 +175,7 @@ jobs:
       - name: 'Prepare ${{ matrix.target }} build/installer files'
         if: success()
         run: |
-          mkdir ./package ./installer
+          mkdir ./package, ./installer
           robocopy .\build\rundir\RelWithDebInfo\obs-plugins\${{ matrix.deps_ext }}bit\ .\package\obs-plugins\${{ matrix.deps_ext }}bit ${{ env.PLUGIN_NAME }}.* /E /XF .gitignore
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
           copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\installer\Windows.iss
