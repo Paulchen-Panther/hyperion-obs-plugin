@@ -37,7 +37,7 @@ jobs:
           path: 'plugins/${{ env.PLUGIN_NAME }}/buildspec.json'
           prop_path: 'version'
 
-      - name: 'Install OBS Studio Dependencies'
+      - name: 'Install OBS Studio dependencies'
         run: CI/linux/01_install_dependencies.sh --disable-pipewire
 
       - name: Install Flatbuffers
@@ -124,7 +124,7 @@ jobs:
         shell: cmd
         run: echo add_subdirectory(${{ env.PLUGIN_NAME }}) >> plugins/CMakeLists.txt
 
-      - name: 'Install OBS Studio Dependencies'
+      - name: 'Install OBS Studio dependencies'
         run: |
           curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
           curl -kLO https://github.com/obsproject/obs-deps/releases/download/${{ env.WINDOWS_DEPS_VERSION }}/windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -f --retry 5 -C -
@@ -145,7 +145,7 @@ jobs:
           vcpkg install flatbuffers:${{ matrix.target }}-windows
           vcpkg integrate install
 
-      - name: 'Configure and Build OBS Studio with hyperion-obs'
+      - name: 'Configure and build OBS Studio with hyperion-obs'
         run: |
           mkdir ./build
           cmake -S . `
@@ -172,23 +172,23 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
-      - name: 'Prepare ${{ matrix.deps_ext }} build/Installer Files'
+      - name: 'Prepare ${{ matrix.target }} build/installer files'
         if: success()
         run: |
-          mkdir ./package
+          mkdir ./package ./installer
           robocopy .\build\rundir\RelWithDebInfo\obs-plugins\${{ matrix.deps_ext }}bit\ .\package\obs-plugins\${{ matrix.deps_ext }}bit ${{ env.PLUGIN_NAME }}.* /E /XF .gitignore
           robocopy .\build\rundir\RelWithDebInfo\data\obs-plugins\${{ env.PLUGIN_NAME }}\ .\package\data\obs-plugins\${{ env.PLUGIN_NAME }}\ /E /XF .gitignore
           copy .\build\plugins\${{ env.PLUGIN_NAME }}\Windows.iss .\installer\Windows.iss
           exit 0
 
-      - name: 'Publish ${{ matrix.deps_ext }} build files'
+      - name: 'Publish ${{ matrix.target }} build files'
         if: success()
         uses: actions/upload-artifact@v3.1.2
         with:
           name: 'windows-${{ matrix.target }}'
           path: package/*
 
-      - name: 'Publish Installer Files'
+      - name: 'Publish installer files'
         if: success()
         uses: actions/upload-artifact@v3.1.2
         with:
