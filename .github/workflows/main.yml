@@ -83,6 +83,75 @@ jobs:
           name: '${{ env.FILE_NAME }}'
           path: '*.tar.gz'
 
+  macos:
+    name: macOS
+    runs-on: macos-12
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, arm64, universal]
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '10.15'  
+    defaults:
+      run:
+        shell: zsh {0}
+    steps:
+      - name: 'Checkout OBS Studio'
+        uses: actions/checkout@v3.3.0
+        with:
+          repository: obsproject/obs-studio
+          ref: ${{ env.OBS_VERSION }}
+          submodules: 'recursive'
+
+      - name: 'Checkout hyperion-obs'
+        uses: actions/checkout@v3.3.0
+        with:
+          path: plugin
+          submodules: recursive
+
+      - name: 'Setup Environment'
+        id: setup
+        working-directory: ${{ github.workspace }}/plugin
+        run: |
+          ## SETUP ENVIRONMENT SCRIPT
+          print '::group::Clean Homebrew Environment'
+          typeset -a to_remove=()
+          for formula (speexdsp curl php) {
+            if [[ -d ${HOMEBREW_PREFIX}/opt/${formula} ]] to_remove+=(${formula})
+          }
+          if (( #to_remove > 0 )) brew uninstall --ignore-dependencies ${to_remove}
+          print '::endgroup::'
+          print "ccacheDate=$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
+
+      - name: 'Restore Compilation Cache'
+        id: ccache-cache
+        uses: actions/cache@v3.2.3
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: macos-${{ matrix.arch }}-ccache-plugin-${{ steps.setup.outputs.ccacheDate }}
+          restore-keys: macos-${{ matrix.arch }}-ccache-plugin
+
+      - name: 'Build'
+        uses: ./plugin/.github/actions/build-plugin
+        with:
+          workingDirectory: ${{ github.workspace }}/plugin
+          target: ${{ matrix.arch }}
+          config: RelWithDebInfo
+
+      - name: 'Package'
+        uses: ./plugin/.github/actions/package-plugin
+        with:
+          workingDirectory: ${{ github.workspace }}/plugin
+          target: ${{ matrix.arch }}
+          config: RelWithDebInfo
+
+      - name: 'Upload'
+        if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v3.1.1
+        with:
+          name: ${{ env.PLUGIN_NAME }}-macos-${{ matrix.arch }}
+          path: ${{ github.workspace }}/plugin/release/${{ env.PLUGIN_NAME }}-*-macos-${{ matrix.arch }}.pkg
+
   windows-build:
     name: 'Windows Build'
     runs-on: [windows-latest]
@@ -153,7 +222,7 @@ jobs:
             -DENABLE_PLUGINS=TRUE `
             -DDISABLE_PLUGINS=FALSE `
             -DENABLE_BROWSER=FALSE `
-            -DENABLE_WEBSOCKET=FALSE `
+            -DENABLE_WEBSOCKET=FALSE
           msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
       - name: 'Prepare ${{ matrix.target }} build/installer files'
@@ -236,80 +305,10 @@ jobs:
             windows-x64
             installer-files
 
-  macos:
-    name: macOS
-    runs-on: macos-12
-    strategy:
-      fail-fast: false
-      matrix:
-        arch: [x86_64, arm64, universal]
-    env:
-      MACOSX_DEPLOYMENT_TARGET: '10.15'  
-    defaults:
-      run:
-        shell: zsh {0}
-    steps:
-      - name: 'Checkout OBS Studio'
-        uses: actions/checkout@v3.3.0
-        with:
-          repository: 'obsproject/obs-studio'
-          path: obs-studio
-          fetch-depth: 0
-          submodules: recursive
-
-      - name: 'Checkout hyperion-obs'
-        uses: actions/checkout@v3.3.0
-        with:
-          path: plugin
-          submodules: recursive
-
-      - name: 'Setup Environment'
-        id: setup
-        working-directory: ${{ github.workspace }}/plugin
-        run: |
-          ## SETUP ENVIRONMENT SCRIPT
-          print '::group::Clean Homebrew Environment'
-          typeset -a to_remove=()
-          for formula (speexdsp curl php) {
-            if [[ -d ${HOMEBREW_PREFIX}/opt/${formula} ]] to_remove+=(${formula})
-          }
-          if (( #to_remove > 0 )) brew uninstall --ignore-dependencies ${to_remove}
-          print '::endgroup::'
-          print "ccacheDate=$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
-
-      - name: 'Restore Compilation Cache'
-        id: ccache-cache
-        uses: actions/cache@v3.2.3
-        with:
-          path: ${{ github.workspace }}/.ccache
-          key: macos-${{ matrix.arch }}-ccache-plugin-${{ steps.setup.outputs.ccacheDate }}
-          restore-keys: macos-${{ matrix.arch }}-ccache-plugin
-
-      - name: 'Build'
-        uses: ./plugin/.github/actions/build-plugin
-        with:
-          workingDirectory: ${{ github.workspace }}/plugin
-          target: ${{ matrix.arch }}
-          config: RelWithDebInfo
-
-      - name: 'Package'
-        uses: ./plugin/.github/actions/package-plugin
-        with:
-          workingDirectory: ${{ github.workspace }}/plugin
-          target: ${{ matrix.arch }}
-          config: RelWithDebInfo
-
-      - name: 'Upload'
-        if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v3.1.1
-        with:
-          name: ${{ env.PLUGIN_NAME }}-macos-${{ matrix.arch }}
-          path: ${{ github.workspace }}/plugin/release/${{ env.PLUGIN_NAME }}-*-macos-${{ matrix.arch }}.pkg
-
   github_publish:
     name: 'Publish GitHub Releases'
     if: startsWith(github.event.ref, 'refs/tags')
-    needs: [linux, windows-package, macos]
+    needs: [linux, macos, windows-package]
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout hyperion-obs'

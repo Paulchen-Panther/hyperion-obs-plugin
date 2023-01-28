@@ -216,6 +216,11 @@ Usage: %B${functrace[1]%:*}%b <option> [<options>]
           -DOBS_CODESIGN_LINKER=ON
           -DOBS_BUNDLE_CODESIGN_IDENTITY="${CODESIGN_IDENT:--}"
         )
+
+         if [[ ${target} == 'macos-arm64' ]] {
+          cmake_args+=(-DFLATBUFFERS_FLATC_EXECUTABLE:STRING=/opt/homebrew/bin/flatc)
+        }
+
         num_procs=$(( $(sysctl -n hw.ncpu) + 1 ))
         ;;
       linux-*)

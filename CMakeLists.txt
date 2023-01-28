@@ -45,8 +45,8 @@ else ()
 	# define the include for the flatbuffers library
 	set(FLATBUFFERS_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/external/flatbuffers/include")
 
-	# define the flatc executable 
-	set(FLATBUFFERS_FLATC_EXECUTABLE "$<TARGET_FILE:flatc>")
+	# define the flatc executable
+	set(FLATBUFFERS_FLATC_EXECUTABLE "$<TARGET_FILE:flatc>" CACHE STRING "flatc compiler")
 endif()
 
 # Compile Flatbuffers schema file
