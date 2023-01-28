@@ -291,9 +291,6 @@ jobs:
           }
           if (( #to_remove > 0 )) brew uninstall --ignore-dependencies ${to_remove}
           print '::endgroup::'
-          print '::group::Install Flatbuffers'
-          brew install flatbuffers
-          print '::endgroup::'
           print "ccacheDate=$(date +"%Y-%m-%d")" >> $GITHUB_OUTPUT
 
       - name: 'Restore Compilation Cache'
