@@ -40,9 +40,6 @@ jobs:
       - name: 'Install OBS Studio dependencies'
         run: CI/linux/01_install_dependencies.sh --disable-pipewire
 
-      - name: Install Flatbuffers
-        run: sudo apt-get install -y libflatbuffers-dev
-
       - name: 'Configure and Build OBS Studio with hyperion-obs'
         shell: bash
         run: |
@@ -131,20 +128,6 @@ jobs:
           7z x windows-deps-qt6-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
           7z x windows-deps-${{ env.WINDOWS_DEPS_VERSION }}-${{ matrix.target }}.zip -o"${{ github.workspace }}/cmbuild/deps"
 
-      - name: 'Restore Flatbuffers from vcpkg'
-        uses: actions/cache@v3.2.3
-        id: vcpkg
-        with:
-          path: C:/vcpkg/installed
-          key: windows-${{ matrix.target }}-vcpkg
-
-      - name: 'Install Flatbuffers from vcpkg'
-        shell: cmd
-        if: steps.vcpkg.outputs.cache-hit != 'true'
-        run: |
-          vcpkg install flatbuffers:${{ matrix.target }}-windows
-          vcpkg integrate install
-
       - name: 'Configure and build OBS Studio with hyperion-obs'
         run: |
           mkdir ./build
@@ -169,7 +152,6 @@ jobs:
             -DDISABLE_PLUGINS=FALSE `
             -DENABLE_BROWSER=FALSE `
             -DENABLE_WEBSOCKET=FALSE `
-            -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
           msbuild /m /p:Configuration=RelWithDebInfo .\build\obs-studio.sln
 
       - name: 'Prepare ${{ matrix.target }} build/installer files'
