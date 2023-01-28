@@ -25,6 +25,7 @@ jobs:
         uses: actions/checkout@v3.3.0
         with:
           path: plugins/${{ env.PLUGIN_NAME }}
+          submodules: recursive
 
       - name: 'Add hyperion-obs to plugins'
         shell: bash
@@ -116,6 +117,7 @@ jobs:
         uses: actions/checkout@v3.3.0
         with:
           path: plugins/${{ env.PLUGIN_NAME}}
+          submodules: recursive
 
       - name: 'Add hyperion-obs to OBS Studio plugins'
         shell: cmd
