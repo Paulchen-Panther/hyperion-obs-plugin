@@ -67,26 +67,13 @@ if(OS_WINDOWS)
 	target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.rc)
 	target_link_libraries(${PROJECT_NAME} w32-pthreads)
 elseif(OS_MACOS)
-	set(BUNDLE_IDENTIFIER "com.hyperion-project.hyperion-obs")
+	set(MACOS_PACKAGE_UUID "207061E8-795D-4FC8-9BB6-30DF9291E34F")
+	set(MACOS_INSTALLER_UUID "A4BEF905-CFE5-45F7-B29F-561FD3838103")
+	set(MACOS_BUNDLEID "com.hyperion-project.hyperion-obs")
+	set(MACOSX_PLUGIN_GUI_IDENTIFIER "${MACOS_BUNDLEID}")
+	set(MACOSX_PLUGIN_BUNDLE_VERSION "${PROJECT_VERSION}")
+	set(MACOSX_PLUGIN_SHORT_VERSION_STRING "1")
 	configure_file(package/macOS.pkgproj.in ${CMAKE_BINARY_DIR}/macOS.pkgproj)
-
-	set_target_properties(${PROJECT_NAME} PROPERTIES PREFIX "")
-	# add_custom_command(
-	# 	TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-	# 	COMMAND install_name_tool
-	# 		-change @rpath/libobs.0.dylib @executable_path/../Frameworks/libobs.0.dylib
-	# 		-change @rpath/libobs-frontend-api.dylib @executable_path/../Frameworks/libobs-frontend-api.dylib
-	# 		-change ${CMAKE_PREFIX_PATH}/lib/QtCore.framework/Versions/5/QtCore @executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore
-	# 		-change @rpath/QtCore.framework/Versions/5/QtCore @executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore
-	# 		-change ${CMAKE_PREFIX_PATH}/lib/QtGui.framework/Versions/5/QtGui @executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui
-	# 		-change @rpath/QtGui.framework/Versions/5/QtGui @executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui
-	# 		-change ${CMAKE_PREFIX_PATH}/lib/QtNetwork.framework/Versions/5/QtNetwork @executable_path/../Frameworks/QtNetwork.framework/Versions/5/QtNetwork
-	# 		-change @rpath/QtNetwork.framework/Versions/5/QtNetwork @executable_path/../Frameworks/QtNetwork.framework/Versions/5/QtNetwork
-	# 		-change ${CMAKE_PREFIX_PATH}/lib/QtWidgets.framework/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets
-	# 		-change @rpath/QtWidgets.framework/Versions/5/QtWidgets @executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets
-	# 		$<TARGET_FILE:${CMAKE_PROJECT_NAME}>
-	# )
-
 	target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 else()
 	if(BUILD_OUT_OF_TREE)
