@@ -328,7 +328,7 @@ jobs:
   github_publish:
     name: 'Publish GitHub Releases'
     if: startsWith(github.event.ref, 'refs/tags')
-    needs: [linux, windows-package]
+    needs: [linux, windows-package, macos]
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout hyperion-obs'
