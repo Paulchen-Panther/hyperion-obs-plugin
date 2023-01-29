@@ -215,6 +215,7 @@ Usage: %B${functrace[1]%:*}%b <option> [<options>]
           -DCMAKE_OSX_DEPLOYMENT_TARGET=${DEPLOYMENT_TARGET:-10.15}
           -DOBS_CODESIGN_LINKER=ON
           -DOBS_BUNDLE_CODESIGN_IDENTITY="${CODESIGN_IDENT:--}"
+          "${ADDITIONAL_PARAMS}"
         )
 
         num_procs=$(( $(sysctl -n hw.ncpu) + 1 ))

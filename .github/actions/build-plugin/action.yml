@@ -8,6 +8,9 @@ inputs:
     description: 'Build configuration'
     required: false
     default: 'Release'
+  additionalParams:
+    description: 'Additional parameters'
+    required: false
   codesign:
     description: 'Enable codesigning (macOS only)'
     required: false
@@ -32,6 +35,7 @@ runs:
       shell: zsh {0}
       env:
         CODESIGN_IDENT: ${{ inputs.codesignIdent }}
+        ADDITIONAL_PARAMS: ${{ inputs.additionalParams }}
       run: |
         build_args=(
           -c ${{ inputs.config }}
