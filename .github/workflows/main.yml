@@ -146,10 +146,10 @@ jobs:
             -DFLATBUFFERS_BUILD_FLATLIB=OFF \
             -DFLATBUFFERS_BUILD_FLATHASH=OFF \
             -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/plugin/external/flatbuffers/build_x86_64 \
-            -DFLATBUFFERS_BUILD_FLATC=ON \
-            -DCMAKE_VERBOSE_MAKEFILE=ON
-          cmake --build "./build_x86_64" --parallel $(( $(sysctl -n hw.ncpu) + 1 )) --target INSTALL
-          echo "FLATC_EXECUTABLE=-DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/external/flatbuffers/build_x86_64/flatc" >> $GITHUB_ENV
+            -DFLATBUFFERS_BUILD_FLATC=ON
+          cmake --build "./build_x86_64" --parallel $(( $(sysctl -n hw.ncpu) + 1 ))
+          cmake --install "./build_x86_64" --config RelWithDebInfo
+          echo "FLATC_EXECUTABLE=-DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/external/flatbuffers/build_x86_64/bin/flatc" >> $GITHUB_ENV
 
       - name: 'Build'
         uses: ./plugin/.github/actions/build-plugin
