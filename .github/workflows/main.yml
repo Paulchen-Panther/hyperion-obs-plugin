@@ -131,12 +131,26 @@ jobs:
           key: macos-${{ matrix.arch }}-ccache-plugin-${{ steps.setup.outputs.ccacheDate }}
           restore-keys: macos-${{ matrix.arch }}-ccache-plugin
 
+      - name: 'Build native flatc compiler (only arm64)'
+        if: ${{ matrix.arch }} == 'arm64'
+        working-directory: ${{ github.workspace }}/plugin/hyperion-obs/external/flatbuffers
+        run: |
+          mkdir ./build
+          cmake -S . \
+            -B "./build" \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE="RelWithDebInfo" \
+            -DFLATBUFFERS_BUILD_TESTS=OFF \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DFLATBUFFERS_BUILD_FLATC=ON
+          cmake --build "./build"
+
       - name: 'Build'
         uses: ./plugin/.github/actions/build-plugin
         with:
           workingDirectory: ${{ github.workspace }}/plugin
           target: ${{ matrix.arch }}
-          config: RelWithDebInfo
+          config: RelWithDebInfo -DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/hyperion-obs/external/flatbuffers/build/bin/flatc
 
       - name: 'Package'
         uses: ./plugin/.github/actions/package-plugin

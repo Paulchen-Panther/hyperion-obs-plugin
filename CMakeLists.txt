@@ -31,21 +31,26 @@ set_target_properties(${PROJECT_NAME} PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC O
 # Compile Flatbuffers library or use Flatbuffers library from system
 option(USE_SYSTEM_FLATBUFFERS_LIBS "Use Flatbuffers library from system (default: OFF)" OFF)
 
-if (USE_SYSTEM_FLATBUFFERS_LIBS)
+if(USE_SYSTEM_FLATBUFFERS_LIBS)
 	find_program(FLATBUFFERS_FLATC_EXECUTABLE NAMES flatc REQUIRED)
 	find_package(Flatbuffers REQUIRED)
-else ()
+else()
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared flatbuffers library")
 	set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "Build Flatbuffers with tests")
 	add_subdirectory(external/flatbuffers)
 
-	# export the flatc compiler
-	export(TARGETS flatc FILE "${CMAKE_CURRENT_BINARY_DIR}/flatc_export.cmake")
+	# export the flatc compiler (from cross or native compile)
+	set(IMPORT_FLATC "" CACHE STRING "flatc export file (flatc_export.cmake) from a native build")
+	if (IMPORT_FLATC)
+		include(${IMPORT_FLATC})
+	else()
+		export(TARGETS flatc FILE "${CMAKE_CURRENT_BINARY_DIR}/flatc_export.cmake")
+	endif()
 
 	# define the include for the flatbuffers library
 	set(FLATBUFFERS_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/external/flatbuffers/include")
 
-	# define the flatc executable
+	# define the flatc executable (from cross or native compile)
 	set(FLATBUFFERS_FLATC_EXECUTABLE "$<TARGET_FILE:flatc>" CACHE STRING "flatc compiler")
 endif()
 
