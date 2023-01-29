@@ -145,7 +145,7 @@ jobs:
             -DBUILD_SHARED_LIBS=OFF \
             -DFLATBUFFERS_BUILD_FLATC=ON \
             -DCMAKE_VERBOSE_MAKEFILE=ON
-          cmake --build "./build_x86_64 --parallel $(( $(sysctl -n hw.ncpu) + 1 ))"
+          cmake --build "./build_x86_64" --parallel $(( $(sysctl -n hw.ncpu) + 1 ))
           echo "FLATC_EXECUTABLE=-DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/external/flatbuffers/build_x86_64/bin/flatc" >> $GITHUB_ENV
 
       - name: 'Build'
