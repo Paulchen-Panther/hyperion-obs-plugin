@@ -135,6 +135,7 @@ jobs:
         if: ${{ matrix.arch == 'arm64' }}
         working-directory: ${{ github.workspace }}/plugin/external/flatbuffers
         run: |
+          brew install cmake ninja
           mkdir ./build
           cmake -S . \
             -B "./build" \
