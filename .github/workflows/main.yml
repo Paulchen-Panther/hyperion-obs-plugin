@@ -132,8 +132,8 @@ jobs:
           restore-keys: macos-${{ matrix.arch }}-ccache-plugin
 
       - name: 'Build native flatc compiler (only arm64)'
-        if: ${{ matrix.arch }} == 'arm64'
-        working-directory: ${{ github.workspace }}/plugin/hyperion-obs/external/flatbuffers
+        if: ${{ matrix.arch == 'arm64' }}
+        working-directory: ${{ github.workspace }}/plugin/external/flatbuffers
         run: |
           mkdir ./build
           cmake -S . \
@@ -150,7 +150,7 @@ jobs:
         with:
           workingDirectory: ${{ github.workspace }}/plugin
           target: ${{ matrix.arch }}
-          config: RelWithDebInfo -DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/hyperion-obs/external/flatbuffers/build/bin/flatc
+          config: RelWithDebInfo -DFLATBUFFERS_FLATC_EXECUTABLE:STRING=${{ github.workspace }}/plugin/external/flatbuffers/build/bin/flatc
 
       - name: 'Package'
         uses: ./plugin/.github/actions/package-plugin
